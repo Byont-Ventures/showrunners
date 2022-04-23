@@ -20,7 +20,7 @@ export default () => {
 
   channel.logInfo(`-- 🛵 Scheduling Showrunner ${channel.cSettings.name} -  Channel [on 15 secs ]`);
   schedule.scheduleJob('5    *    *    *    *    *', async function () {
-    const taskName = `${channel.cSettings.name}- Lens realtime`;
+    const taskName = `${channel.cSettings.name} - realtime notifications`;
     try {
       await channel.sendRealTimeNotifications();
       channel.logger.info(`🐣 Cron Task Completed -- ${taskName}`);

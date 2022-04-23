@@ -1,9 +1,16 @@
-import abi from './abi.json';
+import lensHub from './lensHub.json';
 import { Inject, Service } from 'typedi';
 import { Logger } from 'winston';
 import config, { defaultSdkSettings } from '../../config';
 import { EPNSChannel } from '../../helpers/epnschannel';
 import { ethers } from 'ethers';
+import Web3 from 'web3';
+
+const lensAddress = '0x4BF0c7AD32Fd2d32089790a54485e23f5C7736C0';
+const p = 'wss://polygon-mumbai.g.alchemy.com/v2/tz5nV3ZTVrBM8R_RC9TSs6tdsYylGrRR';
+var Contract = require('web3-eth-contract');
+Contract.setProvider(p);
+const contract = new Contract(lensHub, lensAddress);
 
 console.log(`Polygon provider: ${config.web3PolygonMumbaiRPC}`);
 const provider = ethers.getDefaultProvider(config.web3PolygonMumbaiRPC, {
@@ -14,7 +21,6 @@ const provider = ethers.getDefaultProvider(config.web3PolygonMumbaiRPC, {
   alchemy: config.alchemyAPI ? config.alchemyAPI : null,
 });
 
-const lensAddress = '0x4bf0c7ad32fd2d32089790a54485e23f5c7736c0';
 @Service()
 export default class LensChannel extends EPNSChannel {
   LAST_CHECKED_BLOCK;
@@ -37,50 +43,68 @@ export default class LensChannel extends EPNSChannel {
   async sendPostCreationNotifications(contract, beginBlock: number, toBlock: number) {
     const filter = await contract.filters.PostCreated();
     const events = await contract.queryFilter(filter, beginBlock, toBlock);
-    console.log(`Got ${events.length} posts`);
+
     for (const evt of events) {
       const msg = `Post ${evt.args.pubId} made by #${evt.args.profileId} on: ${evt.args.timestamp}`;
       // const payloadMsg = `Coven [b:#${evt.args.tokenId}] transferred\nFrom :  [s:${evt.args.from}]\nTo : [t:${evt.args.to}]`;
-      const title = `You've got a post Transferred`;
+      const title = `There's a new post!`;
       // //   const payloadTitle = `Coven Transferred`;
       console.log(msg);
     }
     console.log(`Got ${events.length} posts`);
   }
 
-  async sendCommentNotifications(contract, beginBlock: number, toBlock: number) {
-    const filter = await contract.filters.CommentCreated();
-    const events = await contract.queryFilter(filter, beginBlock, toBlock);
-    for (const evt of events) {
-      const msg = `Post ${evt.args.pubId} made by #${evt.args.profileId} on: ${evt.args.timestamp}`;
-      // const payloadMsg = `Coven [b:#${evt.args.tokenId}] transferred\nFrom :  [s:${evt.args.from}]\nTo : [t:${evt.args.to}]`;
-      const title = `You've got a post Transferred`;
-      // //   const payloadTitle = `Coven Transferred`;
-      console.log(msg);
-    }
-    console.log(`Got ${events.length} posts`);
+  async sendCommentNotifications(beginBlock: number) {
+    Contract.setProvider(p);
+    const contract = new Contract(lensHub, lensAddress);
+
+    contract.getPastEvents('CommentCreated', { fromBlock: beginBlock }).then((events) => {
+      console.log(events);
+      for (const evt of events) {
+        const msg = `Post ${evt.args.pubId} made by #${evt.args.profileId} on: ${evt.args.timestamp}`;
+        // const payloadMsg = `Coven [b:#${evt.args.tokenId}] transferred\nFrom :  [s:${evt.args.from}]\nTo : [t:${evt.args.to}]`;
+        const title = `You've got a Comment!`;
+        // //   const payloadTitle = `Coven Transferred`;
+        console.log(msg);
+      }
+      console.log(`Got ${events.length} comments`);
+    });
+
+    // const filter = await contract.filters.CommentCreated();
+    // console.log(filter);
+    // const events = await contract.queryFilter(filter, beginBlock, toBlock);
+    // console.log(events);
+    // for (const evt of events) {
+    //   const msg = `Post ${evt.args.pubId} made by #${evt.args.profileId} on: ${evt.args.timestamp}`;
+    //   // const payloadMsg = `Coven [b:#${evt.args.tokenId}] transferred\nFrom :  [s:${evt.args.from}]\nTo : [t:${evt.args.to}]`;
+    //   const title = `You've got a Comment!`;
+    //   // //   const payloadTitle = `Coven Transferred`;
+    //   console.log(msg);
+    // }
+    // console.log(`Got ${events.length} comments`);
   }
 
   async sendRealTimeNotifications() {
     const sdk = await this.getSdk();
-    const lens = await sdk.getContract(lensAddress, JSON.stringify(abi));
-    // console.log(`The provider is: ${JSON.stringify(provider)}`);
+    const lens = await sdk.getContract(lensAddress, JSON.stringify(lensHub));
+    console.log(`The provider is: ${JSON.stringify(provider)}`);
 
     lens.provider = provider;
+    console.log(JSON.stringify(lens.provider));
 
     if (!this.LAST_CHECKED_BLOCK) {
-      this.LAST_CHECKED_BLOCK = 2604489; //await lens.provider.getBlockNumber();
+      this.LAST_CHECKED_BLOCK = 25803825; //await lens.provider.getBlockNumber();
       console.log(`Fetching events from now`);
     }
 
-    const toBlock = await lens.provider.getBlockNumber();
-    this.logInfo(`No of events fetching events from  ${this.LAST_CHECKED_BLOCK} to ${toBlock}`);
+    // const toBlock = await lens.provider.getBlockNumber();
+    // this.logInfo(`No of events fetching events from  ${this.LAST_CHECKED_BLOCK} to ${toBlock}`);
 
     // Todo: run these with Promise.all
-    await this.sendCommentNotifications(lens.contract, this.LAST_CHECKED_BLOCK, toBlock);
-    await this.sendPostCreationNotifications(lens.contract, this.LAST_CHECKED_BLOCK, toBlock);
+    await this.sendCommentNotifications(this.LAST_CHECKED_BLOCK);
+    // await this.sendPostCreationNotifications(lens.contract, this.LAST_CHECKED_BLOCK, toBlock);
 
-    this.LAST_CHECKED_BLOCK = toBlock;
+    // this.LAST_CHECKED_BLOCK = toBlock;
 
     // - ProfileCreated
     // - PostCreated
