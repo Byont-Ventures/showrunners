@@ -5,13 +5,15 @@ import config, { defaultSdkSettings } from '../../config';
 import { EPNSChannel } from '../../helpers/epnschannel';
 import { ethers } from 'ethers';
 
-const provider = ethers.getDefaultProvider(config.web3PolygonMumbaiProvider, {
+console.log(`Polygon provider: ${config.web3PolygonMumbaiRPC}`);
+const provider = ethers.getDefaultProvider(config.web3PolygonMumbaiRPC, {
   etherscan: config.etherscanAPI ? config.etherscanAPI : null,
   infura: config.infuraAPI
     ? { projectId: config.infuraAPI.projectID, projectSecret: config.infuraAPI.projectSecret }
     : null,
   alchemy: config.alchemyAPI ? config.alchemyAPI : null,
 });
+
 const lensAddress = '0x4bf0c7ad32fd2d32089790a54485e23f5c7736c0';
 @Service()
 export default class LensChannel extends EPNSChannel {
@@ -35,12 +37,14 @@ export default class LensChannel extends EPNSChannel {
   async sendRealtimenNotifications() {
     const sdk = await this.getSdk();
     const lens = await sdk.getContract(lensAddress, JSON.stringify(abi));
+    // console.log(`The provider is: ${JSON.stringify(provider)}`);
+
     lens.provider = provider;
-    console.log(`The provider is: ${lens.provider.network.name}`);
+    // console.log(`The provider is: ${JSON.stringify(lens.provider)}`);
     const filter = await lens.contract.filters.PostCreated();
 
     if (!this.LAST_CHECKED_BLOCK) {
-      this.LAST_CHECKED_BLOCK = await lens.provider.getBlockNumber();
+      this.LAST_CHECKED_BLOCK = 2604489; //await lens.provider.getBlockNumber();
       console.log(`Fetching events from now`);
     }
 
@@ -48,13 +52,13 @@ export default class LensChannel extends EPNSChannel {
     this.logInfo(`No of events fetching events from  ${this.LAST_CHECKED_BLOCK} to ${toBlock}`);
 
     const events = await lens.contract.queryFilter(filter, this.LAST_CHECKED_BLOCK, toBlock);
-
+    console.log(`Got ${events.length} posts`);
     for (const evt of events) {
       const msg = `Post ${evt.args.pubId} made by #${evt.args.profileId} on: ${evt.args.timestamp}`;
-      const payloadMsg = `Coven [b:#${evt.args.tokenId}] transferred\nFrom :  [s:${evt.args.from}]\nTo : [t:${evt.args.to}]`;
-      // const title = `Coven Transferred`;
+      // const payloadMsg = `Coven [b:#${evt.args.tokenId}] transferred\nFrom :  [s:${evt.args.from}]\nTo : [t:${evt.args.to}]`;
+      const title = `You've got a post Transferred`;
       // //   const payloadTitle = `Coven Transferred`;
-
+      console.log(msg);
       // await this.sendNotification({
       //   title: title,
       //   payloadTitle: payloadTitle,
@@ -67,6 +71,7 @@ export default class LensChannel extends EPNSChannel {
       //   image: null,
       // });
     }
+    console.log(`Got ${events.length} posts`);
 
     this.LAST_CHECKED_BLOCK = toBlock;
 
