@@ -24,7 +24,7 @@ export default () => {
 
   const fiveMinuteRule = new schedule.RecurrenceRule();
 
-  fiveMinuteRule.second = 10;
+  fiveMinuteRule.minute = 5;
 
   const channel = Container.get(HelloWorldChannel);
   channel.logInfo(` 🛵 Scheduling Showrunner - ${channel.cSettings.name} Channel`);
