@@ -3,15 +3,11 @@ import axios from 'axios';
 import { apolloClient } from './apolloClient';
 import { gql } from '@apollo/client';
 
-//me 1464
-//enzo 1465
 export async function getSubscriberData(subs: Array<string>) {
   console.log(`We've got ${subs.length} subs`);
-  // TODO: This query should be done at once for all subs
+  // TODO: This query should be done at once for all subs and probably also saved in our own DB
   const retv: Array<subData> = [];
   for (const sub of subs) {
-    console.log(`Fetching for sub: ${sub}`);
-
     const query = `
   query {
     profiles(request: { ownedBy: "${sub}", limit: 10 }) {
@@ -23,6 +19,7 @@ export async function getSubscriberData(subs: Array<string>) {
     }
   }
   `;
+
     const response = await apolloClient.query({
       query: gql(query),
     });
@@ -31,13 +28,20 @@ export async function getSubscriberData(subs: Array<string>) {
       const obj = response.data.profiles.items[0];
       retv.push({ profileId: obj.id, address: obj.ownedBy, handle: obj.handle } as subData);
     } else {
-      console.log('empty');
+      // Not a sub
     }
   }
   const profileToUserData = {};
   retv.forEach((item) => (profileToUserData[item.profileId] = item));
-  return profileToUserData;
+  return profileToUserData as Profiles;
 }
+
+export type Profiles = {
+  [key: string]: {
+    address: string;
+    handle: string;
+  };
+};
 
 export type subData = {
   profileId: string;
