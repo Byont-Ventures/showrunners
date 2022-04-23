@@ -1,9 +1,8 @@
-import abi from './abi.json';
 import { Inject, Service } from 'typedi';
 import { Logger } from 'winston';
 import config, { defaultSdkSettings } from '../../config';
 import { EPNSChannel } from '../../helpers/epnschannel';
-import { queryPosts } from './theGraph';
+import { queryFollowerPosts, queryFollowersOfSubscribers } from './theGraph';
 
 @Service()
 export default class LensChannel extends EPNSChannel {
@@ -28,7 +27,10 @@ export default class LensChannel extends EPNSChannel {
     try {
       let sdk = await this.getSdk();
 
-      const res = queryPosts()
+      const subscribers = await sdk.getSubscribedUsers()
+      const followersOfSubscribers = await queryFollowersOfSubscribers(subscribers)
+      //const res = queryFollowerPosts("")
+      
 
       /*await this.sendNotification({
         title: 'title',

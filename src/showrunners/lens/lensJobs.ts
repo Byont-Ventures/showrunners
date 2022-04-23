@@ -12,7 +12,7 @@ export default () => {
   tenSecondRule.second = 10;
 
   // Can be used to quickly see what the query does
-  // channel.sendDailyNewsletter();
+  channel.sendDailyNewsletter();
 
   channel.logInfo(`-- 🛵 Scheduling Showrunner ${channel.cSettings.name} -  Channel [on 10 seconds ]`);
   schedule.scheduleJob({ start: startTime, rule: tenSecondRule }, async function () {
