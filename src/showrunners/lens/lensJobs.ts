@@ -22,7 +22,7 @@ export default () => {
   schedule.scheduleJob('5    *    *    *    *    *', async function () {
     const taskName = `${channel.cSettings.name}- Lens realtime`;
     try {
-      await channel.sendRealtimenNotifications();
+      await channel.sendRealTimeNotifications();
       channel.logger.info(`🐣 Cron Task Completed -- ${taskName}`);
     } catch (err) {
       channel.logger.error(`❌ Cron Task Failed -- ${taskName}`);

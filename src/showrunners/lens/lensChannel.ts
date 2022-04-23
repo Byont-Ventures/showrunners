@@ -34,14 +34,39 @@ export default class LensChannel extends EPNSChannel {
     });
   }
 
-  async sendRealtimenNotifications() {
+  async sendPostCreationNotifications(contract, beginBlock: number, toBlock: number) {
+    const filter = await contract.filters.PostCreated();
+    const events = await contract.queryFilter(filter, beginBlock, toBlock);
+    console.log(`Got ${events.length} posts`);
+    for (const evt of events) {
+      const msg = `Post ${evt.args.pubId} made by #${evt.args.profileId} on: ${evt.args.timestamp}`;
+      // const payloadMsg = `Coven [b:#${evt.args.tokenId}] transferred\nFrom :  [s:${evt.args.from}]\nTo : [t:${evt.args.to}]`;
+      const title = `You've got a post Transferred`;
+      // //   const payloadTitle = `Coven Transferred`;
+      console.log(msg);
+    }
+    console.log(`Got ${events.length} posts`);
+  }
+
+  async sendCommentNotifications(contract, beginBlock: number, toBlock: number) {
+    const filter = await contract.filters.CommentCreated();
+    const events = await contract.queryFilter(filter, beginBlock, toBlock);
+    for (const evt of events) {
+      const msg = `Post ${evt.args.pubId} made by #${evt.args.profileId} on: ${evt.args.timestamp}`;
+      // const payloadMsg = `Coven [b:#${evt.args.tokenId}] transferred\nFrom :  [s:${evt.args.from}]\nTo : [t:${evt.args.to}]`;
+      const title = `You've got a post Transferred`;
+      // //   const payloadTitle = `Coven Transferred`;
+      console.log(msg);
+    }
+    console.log(`Got ${events.length} posts`);
+  }
+
+  async sendRealTimeNotifications() {
     const sdk = await this.getSdk();
     const lens = await sdk.getContract(lensAddress, JSON.stringify(abi));
     // console.log(`The provider is: ${JSON.stringify(provider)}`);
 
     lens.provider = provider;
-    // console.log(`The provider is: ${JSON.stringify(lens.provider)}`);
-    const filter = await lens.contract.filters.PostCreated();
 
     if (!this.LAST_CHECKED_BLOCK) {
       this.LAST_CHECKED_BLOCK = 2604489; //await lens.provider.getBlockNumber();
@@ -51,27 +76,9 @@ export default class LensChannel extends EPNSChannel {
     const toBlock = await lens.provider.getBlockNumber();
     this.logInfo(`No of events fetching events from  ${this.LAST_CHECKED_BLOCK} to ${toBlock}`);
 
-    const events = await lens.contract.queryFilter(filter, this.LAST_CHECKED_BLOCK, toBlock);
-    console.log(`Got ${events.length} posts`);
-    for (const evt of events) {
-      const msg = `Post ${evt.args.pubId} made by #${evt.args.profileId} on: ${evt.args.timestamp}`;
-      // const payloadMsg = `Coven [b:#${evt.args.tokenId}] transferred\nFrom :  [s:${evt.args.from}]\nTo : [t:${evt.args.to}]`;
-      const title = `You've got a post Transferred`;
-      // //   const payloadTitle = `Coven Transferred`;
-      console.log(msg);
-      // await this.sendNotification({
-      //   title: title,
-      //   payloadTitle: payloadTitle,
-      //   message: msg,
-      //   payloadMsg: payloadMsg,
-      //   notificationType: 1,
-      //   recipient: this.channelAddress,
-      //   cta: `https://opensea.io/assets/0x5180db8f5c931aae63c74266b211f580155ecac8/${evt.args.tokenId}`,
-      //   simulate: false,
-      //   image: null,
-      // });
-    }
-    console.log(`Got ${events.length} posts`);
+    // Todo: run these with Promise.all
+    await this.sendCommentNotifications(lens.contract, this.LAST_CHECKED_BLOCK, toBlock);
+    await this.sendPostCreationNotifications(lens.contract, this.LAST_CHECKED_BLOCK, toBlock);
 
     this.LAST_CHECKED_BLOCK = toBlock;
 
