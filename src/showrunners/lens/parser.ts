@@ -15,37 +15,6 @@
 // CommentCreated,
 // MirrorCreated
 
-// getPost(postId)
-
-export async function getSubscriberData(subs: Array<string>) {
-  console.log(`We've got ${subs.length} subs`);
-  subs.forEach((sub) => console.log(JSON.stringify(sub)));
-
-
-}
-
-export interface Followed {
-  // let entity = SocialGraph.load(event.params.follower.toHexString());
-  // if (!entity) {
-  //   let entity = new SocialGraph(event.params.follower.toHexString());
-  //   let newFollowingList: string[] = [];
-  //   for (let index = 0; index < event.params.profileIds.length; index++) {
-  //     const profileId = event.params.profileIds[index].toString();
-  //     newFollowingList.push(profileId);
-  //   }
-  //   entity.following = newFollowingList;
-  //   entity.save();
-  // }
-  // else {
-  //   let newFollowingList: string[] = entity.following;
-  //   for (let index = 0; index < event.params.profileIds.length; index++) {
-  //     const profileId = event.params.profileIds[index].toString();
-  //     newFollowingList.push(profileId);
-  //   }
-  //   entity.following = newFollowingList;
-  //   entity.save();
-  // };
-}
 
 export function parseComment(args): Comment {
   //   console.log(args);

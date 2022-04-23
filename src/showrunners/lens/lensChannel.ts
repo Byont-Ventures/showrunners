@@ -3,11 +3,10 @@ import { Inject, Service } from 'typedi';
 import { Logger } from 'winston';
 import config, { defaultSdkSettings } from '../../config';
 import { EPNSChannel } from '../../helpers/epnschannel';
-import { Contract, ethers } from 'ethers';
-import Web3 from 'web3';
-import { getSubscriberData, parseComment } from './parser';
+import { BigNumber, Contract, ethers } from 'ethers';
+import { parseComment } from './parser';
 import NotificationHelper from '@epnsproject/backend-sdk-staging';
-import { queryFollowerPosts, queryFollowersOfSubscribers } from './theGraph';
+import { getSubscriberData, queryFollowerPosts, queryFollowersOfSubscribers } from './theGraph';
 
 const lensAddress = '0x4BF0c7AD32Fd2d32089790a54485e23f5C7736C0';
 const providerApi = config.mumbaiApi;
@@ -31,7 +30,13 @@ export default class LensChannel extends EPNSChannel {
     });
   }
 
-  async sendNewFollowerNotifications(sdk: NotificationHelper, contract: Contract, beginBlock: number, toBlock: number) {
+  async sendNewFollowerNotifications(
+    sdk: NotificationHelper,
+    contract: Contract,
+    beginBlock: number,
+    toBlock: number,
+    profiles,
+  ) {
     const filter = contract.filters.FollowNFTTransferred();
     // console.log(contract.interface.getEvent('0x4996ad2257e7db44908136c43128cc10ca988096f67dc6bb0bcee11d151368fb'));
     // console.log(contract.interface.getEvent('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'));
@@ -39,22 +44,41 @@ export default class LensChannel extends EPNSChannel {
     const events = await contract.queryFilter(filter, beginBlock, toBlock);
 
     console.log(`New Follower events: ${events.length}`);
+    let c = 0;
     for (const event of events) {
-      // BigNumber { _hex: '0x6263eae1', _isBigNumber: true },
-      // profileId: BigNumber { _hex: '0x07', _isBigNumber: true },
-      // followNFTId: BigNumber { _hex: '0x13', _isBigNumber: true },
-      // from: '0x0000000000000000000000000000000000000000',
-      // to: '0xB8189417c4B63c3F093fC0df72F64D983E904aF4',
-      // timestamp: BigNumber { _hex: '0x6263eae1', _isBigNumber: true }
-      const e = {
-        profileId: event.args.profileId.toString(),
-        followNFTId: event.args.followNFTId.toString(),
-        from: event.args.from,
-        to: event.args.to,
-      };
-      console.log(e);
+      // Todo: We should save count of how many new followers rather than send messages 1 by 1
+      // RN we would send two messages if 2 follows were gained in 1 minute
+      const pId = event.args.profileId as BigNumber;
+      if (pId._hex in profiles) {
+        const data = {
+          profileId: event.args.profileId.toString(),
+          followNFTId: event.args.followNFTId.toString(),
+          from: event.args.from,
+          to: event.args.to,
+        };
+        if (data.to === '0x0000000000000000000000000000000000000000') {
+          // Someone unfollowed :(
+        } else {
+          c++;
+          console.log(`Sending a new follower notification to: ${profiles[pId._hex].address}`);
+          await this.sendNotification({
+            title: 'You have a new follower!',
+            payloadTitle: 'You have a new follower!',
+            message: 'Check it out in your dashboard',
+            payloadMsg: 'Check it out in your dashboard',
+            notificationType: 1,
+            recipient: data.to,
+            cta: `https://lenster.xyz/u/rick`,
+            simulate: false,
+            image: null,
+          });
+          console.log('Sent!');
+        }
+      } else {
+        // ignore
+      }
     }
-    console.log(`New follower events: ${events.length}`);
+    console.log(`New follower events: ${events.length} new subscriber followers: ${c}`);
   }
 
   async sendPostCreationNotifications(contract, beginBlock: number, toBlock: number) {
@@ -71,12 +95,15 @@ export default class LensChannel extends EPNSChannel {
     console.log(`Got ${events.length} posts`);
   }
 
-  async sendCommentNotifications(sdk: NotificationHelper, contract: Contract, beginBlock: number, toBlock: number) {
+  async sendCommentNotifications(
+    sdk: NotificationHelper,
+    contract: Contract,
+    beginBlock: number,
+    toBlock: number,
+    profiles,
+  ) {
     const filter = await contract.filters.CommentCreated();
     const events = await contract.queryFilter(filter, beginBlock, toBlock);
-    const subs = await sdk.getSubscribedUsers();
-    console.log(`We've got ${subs.length} subs`);
-    subs.forEach((sub) => console.log(JSON.stringify(sub)));
 
     // Determine who was the publisher to which the comment was meant
     // get Post for every comment
@@ -94,7 +121,21 @@ export default class LensChannel extends EPNSChannel {
 
   async sendRealTimeNotifications() {
     const sdk = await this.getSdk();
-    const subs = getSubscriberData(await sdk.getSubscribedUsers());
+    const subs = await getSubscriberData(await sdk.getSubscribedUsers());
+    // Todo: For big performane increase we can improve getSubscriberData
+    await this.sendNotification({
+      title: 'You have a new follower!',
+      payloadTitle: 'payloadTitle',
+      message: 'Check it out in your dashboard',
+      payloadMsg: 'payloadMsg',
+      notificationType: 1,
+      recipient: '0xCA85c622d4c61047f96e352CB919695486a193e6',
+      cta: `https://lenster.xyz/u/rick`,
+      simulate: false,
+      image: null,
+    });
+
+    console.log(subs);
 
     const provider = new ethers.providers.WebSocketProvider(providerApi);
     const contract = new ethers.Contract(lensAddress, lensHub, provider);
@@ -103,12 +144,12 @@ export default class LensChannel extends EPNSChannel {
       this.LAST_CHECKED_BLOCK = 26057839; //await lens.provider.getBlockNumber();
       console.log(`Fetching events from now`);
     }
-    const toBlock = provider.blockNumber;
+    const toBlock = await provider.getBlockNumber(); //provider.blockNumber;
     console.log(`Fetching events between ${this.LAST_CHECKED_BLOCK} and ${toBlock}`);
 
     // Todo: run these with Promise.all
-    await this.sendNewFollowerNotifications(sdk, contract, this.LAST_CHECKED_BLOCK, toBlock);
-    await this.sendCommentNotifications(sdk, contract, this.LAST_CHECKED_BLOCK, toBlock);
+    await this.sendNewFollowerNotifications(sdk, contract, this.LAST_CHECKED_BLOCK, toBlock, subs);
+    // await this.sendCommentNotifications(sdk, contract, this.LAST_CHECKED_BLOCK, toBlock);
     // await this.sendPostCreationNotifications(lens.contract, this.LAST_CHECKED_BLOCK, toBlock);
 
     this.LAST_CHECKED_BLOCK = toBlock;
