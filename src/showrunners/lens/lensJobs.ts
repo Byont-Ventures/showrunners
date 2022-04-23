@@ -29,4 +29,22 @@ export default () => {
       channel.logger.error(`Error Object: %o`, err);
     }
   });
+
+  // const startTime = new Date(new Date().setHours(0, 0, 0, 0));
+  // const channel = Container.get(NFTTransferChannel);
+
+  // const tenSecondRule = new schedule.RecurrenceRule();
+
+  // tenSecondRule.second = 10;
+
+  // schedule.scheduleJob({ start: startTime, rule: tenSecondRule }, async function () {
+  //   const taskName = `${channel.cSettings.name} snapShotProposalsTask(false)`;
+  //   try {
+  //     await channel.sendDailyNewsletter();
+  //     channel.logger.info(`🐣 Cron Task Completed -- ${taskName}`);
+  //   } catch (err) {
+  //     channel.logger.error(`❌ Cron Task Failed -- ${taskName}`);
+  //     channel.logger.error(`Error Object: %o`, err);
+  //   }
+  // });
 };

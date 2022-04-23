@@ -7,6 +7,7 @@ import { Contract, ethers } from 'ethers';
 import Web3 from 'web3';
 import { getSubscriberData, parseComment } from './parser';
 import NotificationHelper from '@epnsproject/backend-sdk-staging';
+import { queryFollowerPosts, queryFollowersOfSubscribers } from './theGraph';
 
 const lensAddress = '0x4BF0c7AD32Fd2d32089790a54485e23f5C7736C0';
 const providerApi = config.mumbaiApi;
@@ -126,40 +127,30 @@ export default class LensChannel extends EPNSChannel {
           }
         }
    */
+
   async sendDailyNewsletter() {
-    const sdk = await this.getSdk();
-    const coven = await sdk.getContract('0x5180db8f5c931aae63c74266b211f580155ecac8', JSON.stringify(lensHub));
-    const filter = await coven.contract.filters.Transfer();
+    try {
+      let sdk = await this.getSdk();
 
-    if (!this.LAST_CHECKED_BLOCK) {
-      this.LAST_CHECKED_BLOCK = await coven.provider.getBlockNumber();
-    }
+      const subscribers = await sdk.getSubscribedUsers();
+      const followersOfSubscribers = await queryFollowersOfSubscribers(subscribers);
+      //const res = queryFollowerPosts("")
 
-    const toBlock = await coven.provider.getBlockNumber();
-    this.logInfo(`No of events fetching events from  ${this.LAST_CHECKED_BLOCK} to ${toBlock}`);
-
-    const events = await coven.contract.queryFilter(filter, this.LAST_CHECKED_BLOCK, toBlock);
-
-    this.logInfo(`No of events fetched ${events.length}`);
-
-    for (const evt of events) {
-      const msg = `Coven #${evt.args.tokenId} transferred from ${evt.args.from} to ${evt.args.to}`;
-      const payloadMsg = `Coven [b:#${evt.args.tokenId}] transferred\nFrom :  [s:${evt.args.from}]\nTo : [t:${evt.args.to}]`;
-      const title = `Coven Transferred`;
-      const payloadTitle = `Coven Transferred`;
-      await this.sendNotification({
-        title: title,
-        payloadTitle: payloadTitle,
-        message: msg,
-        payloadMsg: payloadMsg,
+      /*await this.sendNotification({
+        title: 'title',
+        payloadTitle: 'payloadTitle',
+        message: 'msg',
+        payloadMsg: 'payloadMsg',
         notificationType: 1,
-        recipient: this.channelAddress,
-        cta: `https://opensea.io/assets/0x5180db8f5c931aae63c74266b211f580155ecac8/${evt.args.tokenId}`,
+        recipient: 'this.channelAddress',
+        cta: `fhdsjaip${fds}`,
         simulate: false,
         image: null,
-      });
-    }
+      });*/
 
-    this.LAST_CHECKED_BLOCK = toBlock;
+      return { success: true };
+    } catch (error) {
+      this.logError(error);
+    }
   }
 }
