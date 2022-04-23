@@ -94,6 +94,7 @@ let config = {
   /**
    * Web3 Related
    */
+  mumbaiApi: process.env.MUMBAI_PROVIDER,
   etherscanAPI: process.env.ETHERSCAN_API,
 
   infuraAPI: {
