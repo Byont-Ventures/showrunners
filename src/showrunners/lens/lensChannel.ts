@@ -3,7 +3,16 @@ import { Inject, Service } from 'typedi';
 import { Logger } from 'winston';
 import config, { defaultSdkSettings } from '../../config';
 import { EPNSChannel } from '../../helpers/epnschannel';
+import { ethers } from 'ethers';
 
+const provider = ethers.getDefaultProvider(config.web3PolygonMumbaiProvider, {
+  etherscan: config.etherscanAPI ? config.etherscanAPI : null,
+  infura: config.infuraAPI
+    ? { projectId: config.infuraAPI.projectID, projectSecret: config.infuraAPI.projectSecret }
+    : null,
+  alchemy: config.alchemyAPI ? config.alchemyAPI : null,
+});
+const lensAddress = '0x4bf0c7ad32fd2d32089790a54485e23f5c7736c0';
 @Service()
 export default class LensChannel extends EPNSChannel {
   LAST_CHECKED_BLOCK;
@@ -21,6 +30,58 @@ export default class LensChannel extends EPNSChannel {
       url: 'https://lens.dev',
       useOffChain: true,
     });
+  }
+
+  async sendRealtimenNotifications() {
+    const sdk = await this.getSdk();
+    const lens = await sdk.getContract(lensAddress, JSON.stringify(abi));
+    lens.provider = provider;
+    console.log(`The provider is: ${lens.provider.network.name}`);
+    const filter = await lens.contract.filters.PostCreated();
+
+    if (!this.LAST_CHECKED_BLOCK) {
+      this.LAST_CHECKED_BLOCK = await lens.provider.getBlockNumber();
+      console.log(`Fetching events from now`);
+    }
+
+    const toBlock = await lens.provider.getBlockNumber();
+    this.logInfo(`No of events fetching events from  ${this.LAST_CHECKED_BLOCK} to ${toBlock}`);
+
+    const events = await lens.contract.queryFilter(filter, this.LAST_CHECKED_BLOCK, toBlock);
+
+    for (const evt of events) {
+      const msg = `Post ${evt.args.pubId} made by #${evt.args.profileId} on: ${evt.args.timestamp}`;
+      const payloadMsg = `Coven [b:#${evt.args.tokenId}] transferred\nFrom :  [s:${evt.args.from}]\nTo : [t:${evt.args.to}]`;
+      // const title = `Coven Transferred`;
+      // //   const payloadTitle = `Coven Transferred`;
+
+      // await this.sendNotification({
+      //   title: title,
+      //   payloadTitle: payloadTitle,
+      //   message: msg,
+      //   payloadMsg: payloadMsg,
+      //   notificationType: 1,
+      //   recipient: this.channelAddress,
+      //   cta: `https://opensea.io/assets/0x5180db8f5c931aae63c74266b211f580155ecac8/${evt.args.tokenId}`,
+      //   simulate: false,
+      //   image: null,
+      // });
+    }
+
+    this.LAST_CHECKED_BLOCK = toBlock;
+
+    // - ProfileCreated
+    // - PostCreated
+    // - ProfileCreatorWhitelisted
+    // - FollowModuleWhitelisted
+    // - ReferenceModuleWhitelisted
+    // - CollectModuleWhitelisted
+    // - DispatcherSet
+    // - ProfileImageURISet
+    // - FollowNFTURISet
+    // - FollowModuleSet
+    // - MirrorCreated
+    // - CommentCreated
   }
 
   /**
