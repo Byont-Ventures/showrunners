@@ -14,7 +14,7 @@ export default class HelloWorldChannel extends EPNSChannel {
         epnsCommunicatorSettings: defaultSdkSettings.epnsCommunicatorSettings,
         networkSettings: defaultSdkSettings.networkSettings,
       },
-      networkToMonitor: config.web3MainnetNetwork,
+      networkToMonitor: config.web3KovanNetwork,
       dirname: __dirname,
       name: 'Hello World',
       url: 'https://epns.io/',

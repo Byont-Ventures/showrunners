@@ -15,7 +15,7 @@ export default class NFTTransferChannel extends EPNSChannel {
         epnsCommunicatorSettings: defaultSdkSettings.epnsCommunicatorSettings,
         networkSettings: defaultSdkSettings.networkSettings,
       },
-      networkToMonitor: config.web3MainnetNetwork,
+      networkToMonitor: config.web3KovanNetwork,
       dirname: __dirname,
       name: 'NFT Trasfer',
       url: 'https://epns.io',
