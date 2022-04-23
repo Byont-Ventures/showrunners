@@ -23,15 +23,15 @@ export default class LensChannel extends EPNSChannel {
     });
   }
 
-  async sendDailyNewsletter() {
+  async sendDailyNewsletter(lastTime: string) {
     try {
       let sdk = await this.getSdk();
 
       const subscribers = await sdk.getSubscribedUsers()
+      console.log("subscribers:", subscribers)
       const followersOfSubscribers = await queryFollowersOfSubscribers(subscribers)
-      //const res = queryFollowerPosts("")
+      const res = await queryFollowerPosts(followersOfSubscribers, lastTime)
       
-
       /*await this.sendNotification({
         title: 'title',
         payloadTitle: 'payloadTitle',

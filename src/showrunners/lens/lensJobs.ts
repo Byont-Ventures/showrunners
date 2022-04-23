@@ -10,15 +10,19 @@ export default () => {
   const tenSecondRule = new schedule.RecurrenceRule();
 
   tenSecondRule.second = 10;
+  
+  let lastTime = Date.now()
 
   // Can be used to quickly see what the query does
-  channel.sendDailyNewsletter();
+  channel.sendDailyNewsletter("1750751286");
 
   channel.logInfo(`-- 🛵 Scheduling Showrunner ${channel.cSettings.name} -  Channel [on 10 seconds ]`);
   schedule.scheduleJob({ start: startTime, rule: tenSecondRule }, async function () {
     const taskName = `${channel.cSettings.name} snapShotProposalsTask(false)`;
     try {
-      await channel.sendDailyNewsletter();
+      console.log("lastTime:", lastTime.toString())
+      await channel.sendDailyNewsletter(lastTime.toString());
+      lastTime = Date.now()
       channel.logger.info(`🐣 Cron Task Completed -- ${taskName}`);
     } catch (err) {
       channel.logger.error(`❌ Cron Task Failed -- ${taskName}`);

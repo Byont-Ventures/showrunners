@@ -3,42 +3,63 @@ import axios from 'axios';
 import { apolloClient } from './apolloClient';
 import { gql } from '@apollo/client';
 
-const query = `
-query($request: FollowingRequest!) {
-  following(
-    request: $request
-  ) {
-    items {
-      profile {
-        id
-        handle
-        ownedBy
-      }
-    }
-  }
-}
-`;
+export type addressHasNewPost = {
+  id: string;
+  hasNewPost: Boolean;
+};
 
 export type followersOfAddres = {
   address: string;
-  followers: Array<string>;
+  followers: Array<addressHasNewPost>;
 };
 
-export async function queryFollowersOfSubscribers(subscribers: Array<string>) {
-  // const followerList: Array<string>;
+export async function queryFollowersOfSubscribers(subscribers: Array<string>): Promise<Array<followersOfAddres>> {
+  const followerList = new Array<followersOfAddres>();
 
-  subscribers.forEach(async (s) => {
+  for (let i = 0; i < subscribers.length; i++) {
+    const s = subscribers[i];
     const response = await apolloClient.query({
-      query: gql(query),
+      query: gql(`
+      query($request: FollowingRequest!) {
+        following(
+          request: $request
+        ) {
+          items {
+            profile {
+              id
+              handle
+              ownedBy
+            }
+          }
+        }
+      }
+      `),
       variables: {
         request: {
           address: s,
         },
       },
     });
-    // followerList.push({address: s, followers: response.data.following.items });
-    console.log('Lens example data: ', JSON.stringify(response.data.following.items, null, 2));
-  });
+
+    if (response.error) {
+      continue;
+    }
+
+    let followersAddress: followersOfAddres = {
+      address: s,
+      followers: new Array<addressHasNewPost>(),
+    };
+
+    // Fill the following list
+    response.data.following.items.forEach((i) => {
+      followersAddress.followers.push({ id: i.profile.id, hasNewPost: false });
+    });
+
+    followerList.push(followersAddress);
+  }
+
+  console.log('followerList:', JSON.stringify(followerList, null, 2));
+  return followerList;
 }
 
 /**
@@ -72,29 +93,37 @@ query {
 
  */
 
-const EXPLORE_POSTS_QUERY = `{
-    posts(first: 10, orderBy: timestamp, orderDirection: desc, where: {address: }) {
-      id
-      profileId {
-        id
-        creator
+export async function queryFollowerPosts(
+  followersOfSubscribers: Array<followersOfAddres>,
+  sinceTime: string,
+): Promise<Array<followersOfAddres>> {
+  for (let i = 0; i < followersOfSubscribers.length; i++) {
+    for (let j = 0; j < followersOfSubscribers[i].followers.length; j++) {
+      const response = await axios.post('https://api.thegraph.com/subgraphs/name/anudit/lens-protocol', {
+        query: `{
+          posts(where: {profileId: "${parseInt(
+            followersOfSubscribers[i].followers[j].id,
+            16,
+          ).toString()}" timestamp_gt: "${sinceTime}"}) {
+            id
+            profileId {
+              id
+              creator
+            }
+          }
+        }`,
+      });
+
+      try {
+        if (response.data.data.posts.length > 0) {
+          followersOfSubscribers[i].followers[j].hasNewPost = true;
+        }
+      } catch (err) {
+        console.log('Error pasing posts query:', err);
       }
     }
-  }`;
+  }
 
-const APIURL = 'https://api.thegraph.com/subgraphs/name/anudit/lens-protocol';
-
-export async function queryFollowerPosts(address: string) {
-  await axios
-    .post(APIURL, {
-      query: EXPLORE_POSTS_QUERY,
-    })
-    .then((res) => {
-      console.log(JSON.stringify(res.data, null, 2));
-      return res.data;
-    })
-    .catch((error) => {
-      console.error(error);
-      return '';
-    });
+  console.log('followersOfSubscribers:', JSON.stringify(followersOfSubscribers, null, 2));
+  return followersOfSubscribers;
 }
