@@ -1,7 +1,7 @@
 import { Container } from 'typedi';
 import schedule from 'node-schedule';
 import LensChannel from './lensChannel';
-import { getBlockNumber } from './theGraph';
+import { getBlockNumber } from './api/theGraph';
 
 // *    *    *    *    *    *
 // ┬    ┬    ┬    ┬    ┬    ┬

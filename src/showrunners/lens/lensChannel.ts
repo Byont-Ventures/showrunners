@@ -4,7 +4,7 @@ import { Logger } from 'winston';
 import config, { defaultSdkSettings } from '../../config';
 import { EPNSChannel } from '../../helpers/epnschannel';
 import { BigNumber, Contract, ethers } from 'ethers';
-import { parseComment } from './parser';
+import { parseComment } from './api/parser';
 import NotificationHelper from '@epnsproject/backend-sdk-staging';
 import {
   getSubscriberData,
@@ -12,7 +12,7 @@ import {
   getHandleOfAddress,
   queryFollowerPosts,
   queryFollowersOfSubscribers,
-} from './theGraph';
+} from './api/theGraph';
 import { getPublication } from './api/getPub';
 
 const lensAddress = '0x4BF0c7AD32Fd2d32089790a54485e23f5C7736C0';
@@ -73,6 +73,7 @@ export default class LensChannel extends EPNSChannel {
       // RN we would send two messages if 2 follows were gained in 1 minute
       const pId = event.args.profileId as BigNumber;
       if (pId._hex in profiles) {
+        const profile = profiles[pId._hex];
         const data = {
           profileId: event.args.profileId.toString(),
           followNFTId: event.args.followNFTId.toString(),
@@ -83,15 +84,15 @@ export default class LensChannel extends EPNSChannel {
           // Someone unfollowed :(
         } else {
           c++;
-          console.log(`Sending a new follower notification to: ${profiles[pId._hex].address}`);
+          console.log(`Sending a new follower notification to: ${profile.address}`);
           await this.sendNotification({
             title: 'A new follower!',
             payloadTitle: 'A new follower!',
             message: 'Check it out now',
             payloadMsg: 'Check it out now',
             notificationType: 3,
-            recipient: profiles[pId._hex].address,
-            cta: `https://lenster.xyz/u/${profiles.handle}`,
+            recipient: profile.address,
+            cta: `https://lenster.xyz/u/${profile.handle}`,
             simulate: false,
             image: null,
           });

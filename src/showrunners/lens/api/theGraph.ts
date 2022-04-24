@@ -6,7 +6,7 @@ import { gql } from '@apollo/client';
 export type addressHasNewPost = {
   id: string;
   hasNewPost: Boolean;
-}
+};
 
 export async function getSubscriberData(subs: Array<string>) {
   // TODO: This query should be done at once for all subs and probably also saved in our own DB
@@ -140,7 +140,6 @@ export async function queryFollowerPosts(
     }
   }
 
-  console.log('followersOfSubscribers:', JSON.stringify(followersOfSubscribers, null, 2));
   return followersOfSubscribers;
 }
 
@@ -157,7 +156,6 @@ export async function getBlockNumber(): Promise<number> {
 
   try {
     const blocknumber: number = response.data.data._meta.block.number;
-    console.log('blocknumber:', blocknumber);
     return blocknumber;
   } catch (err) {
     console.log('Error getting block number:', err);
@@ -176,10 +174,9 @@ export async function getHandleOfAddress(address: string): Promise<string> {
 
   try {
     const handle: string = response.data.data.profiles[0].handle;
-    console.log('handle:', handle);
     return handle;
   } catch (err) {
     console.log('Error getting handle:', err);
-    return "";
+    return '';
   }
 }
