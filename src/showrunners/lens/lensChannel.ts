@@ -20,6 +20,7 @@ const providerApi = config.mumbaiApi;
 
 @Service()
 export default class LensChannel extends EPNSChannel {
+  LAST_CHECKED_BLOCK: number;
   constructor(@Inject('logger') public logger: Logger, @Inject('cached') public cached) {
     super(logger, {
       sdkSettings: {
