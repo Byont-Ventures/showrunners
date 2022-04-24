@@ -34,14 +34,14 @@ export default class LensChannel extends EPNSChannel {
   async sendRealTimeNotifications() {
     const sdk = await this.getSdk();
     const profiles = await getSubscriberData(await sdk.getSubscribedUsers());
-    console.log(profiles);
+    // console.log(profiles);
     // Todo: For big performane increase we can improve getSubscriberData
     const provider = new ethers.providers.WebSocketProvider(providerApi);
     const contract = new ethers.Contract(lensAddress, lensHub, provider);
 
     if (!this.LAST_CHECKED_BLOCK) {
       console.log(`No known last checked time: fetching events from now`);
-      this.LAST_CHECKED_BLOCK = 26060044; // await provider.getBlockNumber(); //await lens.provider.getBlockNumber();
+      this.LAST_CHECKED_BLOCK = await provider.getBlockNumber(); //26060044;
     }
     const toBlock = await provider.getBlockNumber(); //provider.blockNumber;
     console.log(`Fetching events between ${this.LAST_CHECKED_BLOCK} and ${toBlock}`);
@@ -85,7 +85,7 @@ export default class LensChannel extends EPNSChannel {
             message: 'Check it out now',
             payloadMsg: 'Check it out now',
             notificationType: 1,
-            recipient: data.to,
+            recipient: profiles[pId._hex].address,
             cta: `https://lenster.xyz/u/${profiles.handle}`,
             simulate: false,
             image: null,

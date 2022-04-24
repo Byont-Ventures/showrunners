@@ -4,7 +4,6 @@ import { apolloClient } from './apolloClient';
 import { gql } from '@apollo/client';
 
 export async function getSubscriberData(subs: Array<string>) {
-  console.log(`We've got ${subs.length} subs`);
   // TODO: This query should be done at once for all subs and probably also saved in our own DB
   const retv: Array<subData> = [];
   for (const sub of subs) {
