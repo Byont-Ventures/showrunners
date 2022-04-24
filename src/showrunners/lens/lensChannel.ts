@@ -7,6 +7,7 @@ import { BigNumber, Contract, ethers } from 'ethers';
 import { parseComment } from './parser';
 import NotificationHelper from '@epnsproject/backend-sdk-staging';
 import { getSubscriberData, Profiles, queryFollowerPosts, queryFollowersOfSubscribers } from './theGraph';
+import { getPublication } from './api/getPub';
 
 const lensAddress = '0x4BF0c7AD32Fd2d32089790a54485e23f5C7736C0';
 const providerApi = config.mumbaiApi;
@@ -33,22 +34,21 @@ export default class LensChannel extends EPNSChannel {
   async sendRealTimeNotifications() {
     const sdk = await this.getSdk();
     const profiles = await getSubscriberData(await sdk.getSubscribedUsers());
-
+    console.log(profiles);
     // Todo: For big performane increase we can improve getSubscriberData
     const provider = new ethers.providers.WebSocketProvider(providerApi);
     const contract = new ethers.Contract(lensAddress, lensHub, provider);
 
     if (!this.LAST_CHECKED_BLOCK) {
       console.log(`No known last checked time: fetching events from now`);
-      this.LAST_CHECKED_BLOCK = await provider.getBlockNumber(); //await lens.provider.getBlockNumber();
+      this.LAST_CHECKED_BLOCK = 26060044; // await provider.getBlockNumber(); //await lens.provider.getBlockNumber();
     }
     const toBlock = await provider.getBlockNumber(); //provider.blockNumber;
     console.log(`Fetching events between ${this.LAST_CHECKED_BLOCK} and ${toBlock}`);
 
     // Todo: run these with Promise.all
     await this.sendNewFollowerNotifications(sdk, contract, this.LAST_CHECKED_BLOCK, toBlock, profiles);
-    // await this.sendCommentNotifications(sdk, contract, this.LAST_CHECKED_BLOCK, toBlock);
-    // await this.sendPostCreationNotifications(lens.contract, this.LAST_CHECKED_BLOCK, toBlock);
+    await this.sendCommentNotifications(sdk, contract, this.LAST_CHECKED_BLOCK, toBlock, profiles);
 
     this.LAST_CHECKED_BLOCK = toBlock;
   }
@@ -86,11 +86,10 @@ export default class LensChannel extends EPNSChannel {
             payloadMsg: 'Check it out now',
             notificationType: 1,
             recipient: data.to,
-            cta: `https://lenster.xyz/u/rick`,
+            cta: `https://lenster.xyz/u/${profiles.handle}`,
             simulate: false,
             image: null,
           });
-          console.log('Sent!');
         }
       } else {
         // ignore
@@ -98,16 +97,11 @@ export default class LensChannel extends EPNSChannel {
     }
   }
 
-  async sendPostCreationNotifications(contract, beginBlock: number, toBlock: number) {
-    const filter = await contract.filters.PostCreated();
-    const events = await contract.queryFilter(filter, beginBlock, toBlock);
-
-    for (const evt of events) {
-      const msg = `Post ${evt.args.pubId} made by #${evt.args.profileId} on: ${evt.args.timestamp}`;
-      console.log(msg);
-    }
-    console.log(`Got ${events.length} posts`);
-  }
+  // async sendPostCreationNotifications(contract, beginBlock: number, toBlock: number) {
+  //   const filter = await contract.filters.PostCreated();
+  //   const events = await contract.queryFilter(filter, beginBlock, toBlock);
+  //   // To be implemented
+  // }
 
   async sendCommentNotifications(
     sdk: NotificationHelper,
@@ -125,10 +119,34 @@ export default class LensChannel extends EPNSChannel {
 
     for (const event of events) {
       const comment = parseComment(event.args);
-      const msg = `Post ${comment.postId} made by #${comment.profileId} on: ${comment.timeStamp}`;
-      const title = `You've got a Comment!`;
-      // const payloadMsg = `Coven [b:#${evt.args.tokenId}] transferred\nFrom :  [s:${evt.args.from}]\nTo : [t:${evt.args.to}]`;
+      const msg = `Post ${comment.postId} made by #${comment.profileId} on: ${comment.timeStamp} pubId: ${comment.internalPubId}`;
       console.log(msg);
+      const pub = await getPublication(comment.internalPubId);
+      const profileId = pub.mainPost.profile.id;
+      if (profileId in profiles) {
+        const profile = profiles[profileId];
+        const writer = pub.profile.handle;
+        console.log("We've got a match!");
+        const title = `${writer} commented on your post`;
+        const content = pub.metadata.content;
+
+        await this.sendNotification({
+          title,
+          payloadTitle: title,
+          message: content,
+          payloadMsg: content,
+          notificationType: 1,
+          recipient: profile.address,
+          cta: `https://lenster.xyz/posts/${pub.mainPost.id}`, // Note that if the user isnt logged in he will get a "client-side error"
+          simulate: false,
+          image: null,
+        });
+      } else {
+        // Post owner not in subs
+      }
+
+      // console.log(pub);
+      // const payloadMsg = `Coven [b:#${evt.args.tokenId}] transferred\nFrom :  [s:${evt.args.from}]\nTo : [t:${evt.args.to}]`;
     }
     console.log(`Got ${events.length} comments`);
   }
