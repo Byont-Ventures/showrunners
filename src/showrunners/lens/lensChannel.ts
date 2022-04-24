@@ -6,7 +6,7 @@ import { EPNSChannel } from '../../helpers/epnschannel';
 import { BigNumber, Contract, ethers } from 'ethers';
 import { parseComment } from './parser';
 import NotificationHelper from '@epnsproject/backend-sdk-staging';
-import { getSubscriberData, Profiles, queryFollowerPosts, queryFollowersOfSubscribers } from './theGraph';
+import { getSubscriberData, Profiles, queryFollowersOfSubscribers } from './theGraph';
 import { getPublication } from './api/getPub';
 
 const lensAddress = '0x4BF0c7AD32Fd2d32089790a54485e23f5C7736C0';
@@ -139,7 +139,7 @@ export default class LensChannel extends EPNSChannel {
           recipient: profile.address,
           cta: `https://lenster.xyz/posts/${pub.mainPost.id}`, // Note that if the user isnt logged in he will get a "client-side error"
           simulate: false,
-          image: null,
+          image: pub.profile.picture.original.url,
         });
       } else {
         // Post owner not in subs
