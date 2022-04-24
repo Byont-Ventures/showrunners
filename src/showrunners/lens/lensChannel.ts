@@ -36,9 +36,9 @@ export default class LensChannel extends EPNSChannel {
         if (s.followersHaveNewPosts) {
           await this.sendNotification({
             title: 'New activity!',
-            payloadTitle: 'New activity payload title',
+            payloadTitle: 'New activity!',
             message: 'Your friends posted something new. Check it out!',
-            payloadMsg: 'New activity payload',
+            payloadMsg: 'Your friends posted something new. Check it out!',
             notificationType: 3,
             recipient: s.address,
             cta: `https://lenster.xyz/`,

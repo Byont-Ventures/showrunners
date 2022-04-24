@@ -9,7 +9,7 @@ export default () => {
 
   const thirtySecondRule = new schedule.RecurrenceRule();
 
-  thirtySecondRule.second = 20;
+  thirtySecondRule.second = 30;
   let currentBlock = 99999999
 
   channel.logInfo(`-- 🛵 Scheduling Showrunner ${channel.cSettings.name} -  Channel [on 30 seconds ]`);

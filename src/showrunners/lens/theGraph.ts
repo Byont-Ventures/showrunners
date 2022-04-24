@@ -74,7 +74,7 @@ export async function queryFollowerPosts(
           posts(where: {profileId: "${parseInt(
             followersOfSubscribers[i].followers[j].id,
             16,
-          ).toString()}" _change_block: {number_gt: ${sinceBlock}}}) {
+          ).toString()}" _change_block: {number_gte: ${sinceBlock}}}) {
             id
             profileId {
               id
