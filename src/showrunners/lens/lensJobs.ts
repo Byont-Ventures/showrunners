@@ -28,7 +28,6 @@ export default () => {
     const taskName = `${channel.cSettings.name} snapShotProposalsTask(false)`;
     try {
       channel.logger.info(`🐣 Cron Task Completed -- ${taskName}`);
-      console.log('currentBlock:', currentBlock);
       await channel.sendDailyNewsletter(currentBlock);
       currentBlock = await getBlockNumber();
     } catch (err) {

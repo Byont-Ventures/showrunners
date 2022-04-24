@@ -171,9 +171,7 @@ export default class LensChannel extends EPNSChannel {
   async sendDailyNewsletter(lastBlock: number) {
     try {
       let sdk = await this.getSdk();
-
       const subscribers = await sdk.getSubscribedUsers();
-      console.log('subscribers:', subscribers);
       const followersOfSubscribers = await queryFollowersOfSubscribers(subscribers);
       const followersOfSubscribersUpdated = await queryFollowerPosts(followersOfSubscribers, lastBlock);
 
