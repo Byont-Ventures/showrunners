@@ -38,6 +38,7 @@ export default () => {
   // const fifteenSecondRule = new schedule.RecurrenceRule();
   // fifteenSecondRule = new schedule.Range(15);
 
+  // Note it seems like every 5 secs is neglected, rather every minute
   channel.logInfo(`-- 🛵 Scheduling Showrunner ${channel.cSettings.name} -  Channel [on 15 secs ]`);
   schedule.scheduleJob('5    *    *    *    *    *', async function () {
     const taskName = `${channel.cSettings.name} - realtime notifications`;
