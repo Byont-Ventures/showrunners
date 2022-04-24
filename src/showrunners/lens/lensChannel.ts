@@ -84,7 +84,7 @@ export default class LensChannel extends EPNSChannel {
             payloadTitle: 'A new follower!',
             message: 'Check it out now',
             payloadMsg: 'Check it out now',
-            notificationType: 1,
+            notificationType: 3,
             recipient: profiles[pId._hex].address,
             cta: `https://lenster.xyz/u/${profiles.handle}`,
             simulate: false,
@@ -135,7 +135,7 @@ export default class LensChannel extends EPNSChannel {
           payloadTitle: title,
           message: content,
           payloadMsg: content,
-          notificationType: 1,
+          notificationType: 3,
           recipient: profile.address,
           cta: `https://lenster.xyz/posts/${pub.mainPost.id}`, // Note that if the user isnt logged in he will get a "client-side error"
           simulate: false,
@@ -144,9 +144,6 @@ export default class LensChannel extends EPNSChannel {
       } else {
         // Post owner not in subs
       }
-
-      // console.log(pub);
-      // const payloadMsg = `Coven [b:#${evt.args.tokenId}] transferred\nFrom :  [s:${evt.args.from}]\nTo : [t:${evt.args.to}]`;
     }
     console.log(`Got ${events.length} comments`);
   }
