@@ -111,11 +111,30 @@ export async function getBlockNumber(): Promise<number> {
   });
 
   try {
-    const blocknumber: number = response.data.data._meta.block.number
-    console.log("blocknumber:", blocknumber)
+    const blocknumber: number = response.data.data._meta.block.number;
+    console.log('blocknumber:', blocknumber);
     return blocknumber;
   } catch (err) {
     console.log('Error getting block number:', err);
     return 0;
+  }
+}
+
+export async function getHandleOfAddress(address: string): Promise<string> {
+  const response = await axios.post('https://api.thegraph.com/subgraphs/name/anudit/lens-protocol', {
+    query: `{
+      profiles(where: {owner: "${address}"}) {
+        handle
+      }
+    }`,
+  });
+
+  try {
+    const handle: string = response.data.data.profiles[0].handle;
+    console.log('handle:', handle);
+    return handle;
+  } catch (err) {
+    console.log('Error getting handle:', err);
+    return "";
   }
 }

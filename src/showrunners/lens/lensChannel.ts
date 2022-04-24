@@ -2,12 +2,10 @@ import { Inject, Service } from 'typedi';
 import { Logger } from 'winston';
 import config, { defaultSdkSettings } from '../../config';
 import { EPNSChannel } from '../../helpers/epnschannel';
-import { queryFollowerPosts, queryFollowersOfSubscribers } from './theGraph';
+import { queryFollowerPosts, queryFollowersOfSubscribers, getHandleOfAddress } from './theGraph';
 
 @Service()
 export default class LensChannel extends EPNSChannel {
-  LAST_CHECKED_BLOCK;
-
   constructor(@Inject('logger') public logger: Logger, @Inject('cached') public cached) {
     super(logger, {
       sdkSettings: {
@@ -34,6 +32,7 @@ export default class LensChannel extends EPNSChannel {
 
       followersOfSubscribersUpdated.forEach(async (s) => {
         if (s.followersHaveNewPosts) {
+          const handle: string = await getHandleOfAddress(s.address)
           await this.sendNotification({
             title: 'New activity!',
             payloadTitle: 'New activity!',
@@ -41,7 +40,7 @@ export default class LensChannel extends EPNSChannel {
             payloadMsg: 'Your friends posted something new. Check it out!',
             notificationType: 3,
             recipient: s.address,
-            cta: `https://lenster.xyz/`,
+            cta: `https://lenster.xyz/u/${handle}`,
             simulate: false,
             image: null,
           });
