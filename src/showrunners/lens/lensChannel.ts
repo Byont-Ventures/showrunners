@@ -128,6 +128,9 @@ export default class LensChannel extends EPNSChannel {
       const msg = `Post ${comment.postId} made by #${comment.profileId} on: ${comment.timeStamp} pubId: ${comment.internalPubId}`;
       console.log(msg);
       const pub = await getPublication(comment.internalPubId);
+      if (!pub) {
+        continue;
+      }
       const profileId = pub.mainPost.profile.id;
       if (profileId in profiles) {
         const profile = profiles[profileId];
