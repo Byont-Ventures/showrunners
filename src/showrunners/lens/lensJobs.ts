@@ -25,7 +25,7 @@ export default () => {
   channel.logInfo(`-- 🛵 Scheduling Showrunner ${channel.cSettings.name} -  Channel [on 30 seconds ]`);
 
   schedule.scheduleJob({ start: startTime, rule: thirtySecondRule }, async function () {
-    const taskName = `${channel.cSettings.name} snapShotProposalsTask(false)`;
+    const taskName = `${channel.cSettings.name} - Daily newsletter`;
     try {
       channel.logger.info(`🐣 Cron Task Completed -- ${taskName}`);
       await channel.sendDailyNewsletter(currentBlock);
