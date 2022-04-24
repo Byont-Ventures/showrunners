@@ -23,26 +23,30 @@ export default class LensChannel extends EPNSChannel {
     });
   }
 
-  async sendDailyNewsletter(lastTime: string) {
+  async sendDailyNewsletter(lastBlock: number) {
     try {
       let sdk = await this.getSdk();
 
-      const subscribers = await sdk.getSubscribedUsers()
-      console.log("subscribers:", subscribers)
-      const followersOfSubscribers = await queryFollowersOfSubscribers(subscribers)
-      const res = await queryFollowerPosts(followersOfSubscribers, lastTime)
-      
-      /*await this.sendNotification({
-        title: 'title',
-        payloadTitle: 'payloadTitle',
-        message: 'msg',
-        payloadMsg: 'payloadMsg',
-        notificationType: 1,
-        recipient: 'this.channelAddress',
-        cta: `fhdsjaip${fds}`,
-        simulate: false,
-        image: null,
-      });*/
+      const subscribers = await sdk.getSubscribedUsers();
+      console.log('subscribers:', subscribers);
+      const followersOfSubscribers = await queryFollowersOfSubscribers(subscribers);
+      const followersOfSubscribersUpdated = await queryFollowerPosts(followersOfSubscribers, lastBlock);
+
+      followersOfSubscribersUpdated.forEach(async (s) => {
+        if (s.followersHaveNewPosts) {
+          await this.sendNotification({
+            title: 'New activity!',
+            payloadTitle: 'New activity payload title',
+            message: 'Your friends posted something new. Check it out!',
+            payloadMsg: 'New activity payload',
+            notificationType: 3,
+            recipient: s.address,
+            cta: `https://lenster.xyz/`,
+            simulate: false,
+            image: null,
+          });
+        }
+      });
 
       return { success: true };
     } catch (error) {

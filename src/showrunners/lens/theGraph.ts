@@ -8,13 +8,14 @@ export type addressHasNewPost = {
   hasNewPost: Boolean;
 };
 
-export type followersOfAddres = {
+export type followersOfAddress = {
   address: string;
   followers: Array<addressHasNewPost>;
+  followersHaveNewPosts: Boolean;
 };
 
-export async function queryFollowersOfSubscribers(subscribers: Array<string>): Promise<Array<followersOfAddres>> {
-  const followerList = new Array<followersOfAddres>();
+export async function queryFollowersOfSubscribers(subscribers: Array<string>): Promise<Array<followersOfAddress>> {
+  const followerList = new Array<followersOfAddress>();
 
   for (let i = 0; i < subscribers.length; i++) {
     const s = subscribers[i];
@@ -45,9 +46,10 @@ export async function queryFollowersOfSubscribers(subscribers: Array<string>): P
       continue;
     }
 
-    let followersAddress: followersOfAddres = {
+    let followersAddress: followersOfAddress = {
       address: s,
       followers: new Array<addressHasNewPost>(),
+      followersHaveNewPosts: false,
     };
 
     // Fill the following list
@@ -58,45 +60,13 @@ export async function queryFollowersOfSubscribers(subscribers: Array<string>): P
     followerList.push(followersAddress);
   }
 
-  console.log('followerList:', JSON.stringify(followerList, null, 2));
   return followerList;
 }
 
-/**
-{
-  profiles(where: {owner: "0x8AAA75Ae440fbCc6cF3F14Bc305221C97A251780"}) {
-    id
-    owner
-    handle
-    followNFTURI
-  }
-}
- */
-
-/**
- * https://api-mumbai.lens.dev/
-
-query {
-  following(
-    request: { address: "0x8AAA75Ae440fbCc6cF3F14Bc305221C97A251780" }
-  ) {
-    items {
-      profile {
-        id
-        handle
-        ownedBy
-      }
-    }
-  }
-}
-
-
- */
-
 export async function queryFollowerPosts(
-  followersOfSubscribers: Array<followersOfAddres>,
-  sinceTime: string,
-): Promise<Array<followersOfAddres>> {
+  followersOfSubscribers: Array<followersOfAddress>,
+  sinceBlock: number,
+): Promise<Array<followersOfAddress>> {
   for (let i = 0; i < followersOfSubscribers.length; i++) {
     for (let j = 0; j < followersOfSubscribers[i].followers.length; j++) {
       const response = await axios.post('https://api.thegraph.com/subgraphs/name/anudit/lens-protocol', {
@@ -104,7 +74,7 @@ export async function queryFollowerPosts(
           posts(where: {profileId: "${parseInt(
             followersOfSubscribers[i].followers[j].id,
             16,
-          ).toString()}" timestamp_gt: "${sinceTime}"}) {
+          ).toString()}" _change_block: {number_gt: ${sinceBlock}}}) {
             id
             profileId {
               id
@@ -117,6 +87,7 @@ export async function queryFollowerPosts(
       try {
         if (response.data.data.posts.length > 0) {
           followersOfSubscribers[i].followers[j].hasNewPost = true;
+          followersOfSubscribers[i].followersHaveNewPosts = true;
         }
       } catch (err) {
         console.log('Error pasing posts query:', err);
@@ -126,4 +97,25 @@ export async function queryFollowerPosts(
 
   console.log('followersOfSubscribers:', JSON.stringify(followersOfSubscribers, null, 2));
   return followersOfSubscribers;
+}
+
+export async function getBlockNumber(): Promise<number> {
+  const response = await axios.post('https://api.thegraph.com/subgraphs/name/anudit/lens-protocol', {
+    query: `{
+          _meta {
+            block {
+              number
+            }
+          }
+        }`,
+  });
+
+  try {
+    const blocknumber: number = response.data.data._meta.block.number
+    console.log("blocknumber:", blocknumber)
+    return blocknumber;
+  } catch (err) {
+    console.log('Error getting block number:', err);
+    return 0;
+  }
 }
